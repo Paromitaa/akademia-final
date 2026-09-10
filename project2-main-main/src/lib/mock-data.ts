@@ -3,6 +3,7 @@ import type {
   ActivityItem,
   AIConversation,
   Course,
+  CourseCertificate,
   DashboardStats,
   Instructor,
   LearningPath,
@@ -144,16 +145,17 @@ export const courses: Course[] = [
           },
           {
             id: 'l_6',
-            title: 'Positional encoding lab',
+            title: 'Positional encoding assignment',
             durationMinutes: 35,
-            type: 'lab',
+            type: 'assignment',
             completed: false,
-            description: 'Implement sinusoidal and learned positional encodings in PyTorch.',
-            pdfUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+            description: 'Implement sinusoidal and learned positional encodings in PyTorch and submit your solution.',
             readingContent:
-              '## Positional Encoding Lab\n\nIn this lab you will implement two types of positional encoding and compare their effects on a small transformer.\n\n### Objectives\n1. Implement sinusoidal positional encoding\n2. Implement learned positional embeddings\n3. Compare performance on a sequence copy task\n\nOpen the PDF worksheet for the full lab instructions and starter code.',
+              '## Positional Encoding Assignment\n\nIn this assignment you will implement two types of positional encoding and compare their effects on a small transformer.\n\n### Objectives\n1. Implement sinusoidal positional encoding\n2. Implement learned positional embeddings\n3. Compare performance on a sequence copy task\n\nComplete the starter notebook, ensure all tests pass, and submit your solution.',
+            assignmentTitle: 'Positional Encoding Implementation',
+            assignmentDescription: 'Implement sinusoidal and learned positional encodings in PyTorch. Submit your notebook with all tests passing.',
             resources: [
-              { label: 'Lab starter notebook', url: '#' },
+              { label: 'Assignment starter notebook', url: '#' },
               { label: 'PyTorch docs — nn.Transformer', url: 'https://pytorch.org/docs/stable/generated/torch.nn.Transformer.html' },
             ],
           },
@@ -262,12 +264,14 @@ export const courses: Course[] = [
           },
           {
             id: 'c2_l4',
-            title: 'Retrieval tuning worksheet',
+            title: 'Retrieval tuning assignment',
             durationMinutes: 18,
-            type: 'reading',
+            type: 'assignment',
             completed: false,
-            description: 'Chunk size, overlap, and hybrid search tuning guide.',
-            readingContent: '## Retrieval Tuning\n\n### Chunk size\nStart with 512 tokens. Measure recall@5 on your eval set. Try 256 and 1024.\n\n### Overlap\nAdd 10-20% overlap between chunks to avoid splitting context.\n\n### Hybrid search\nCombine BM25 keyword search with vector search for better recall on queries with rare terms.',
+            description: 'Tune chunk size, overlap, and hybrid search for a sample RAG pipeline.',
+            readingContent: '## Retrieval Tuning Assignment\n\n### Chunk size\nStart with 512 tokens. Measure recall@5 on your eval set. Try 256 and 1024.\n\n### Overlap\nAdd 10-20% overlap between chunks to avoid splitting context.\n\n### Hybrid search\nCombine BM25 keyword search with vector search for better recall on queries with rare terms.\n\nComplete the tuning exercises and submit your optimized config with recall metrics.',
+            assignmentTitle: 'RAG Pipeline Tuning',
+            assignmentDescription: 'Tune chunk size, overlap, and hybrid search parameters. Submit your optimized config with recall metrics.',
           },
         ],
       },
@@ -604,9 +608,9 @@ export const recentActivity: ActivityItem[] = [
   },
   {
     id: 'act_3',
-    type: 'quiz-passed',
-    title: 'Passed quiz: Self-attention',
-    detail: 'Scored 95% — +120 skill points',
+    type: 'lesson-completed',
+    title: 'Completed "Self-attention quiz"',
+    detail: 'Transformers from Scratch · Module 1 — +120 skill points',
     timestamp: '2025-08-01T18:45:00Z',
     courseId: 'c_1',
   },
@@ -651,6 +655,30 @@ export const aiConversations: AIConversation[] = [
   },
 ];
 
+export const courseCertificates: CourseCertificate[] = [
+  {
+    courseId: 'c_3',
+    courseTitle: 'Statistical Foundations for ML',
+    instructorName: 'Sara Okafor',
+    completedAt: '2025-06-15T10:00:00Z',
+    certificateId: 'AKD-2025-0042',
+  },
+  {
+    courseId: 'c_8',
+    courseTitle: 'SQL & Data Analysis',
+    instructorName: 'Sara Okafor',
+    completedAt: '2025-07-05T14:30:00Z',
+    certificateId: 'AKD-2025-0078',
+  },
+  {
+    courseId: 'c_11',
+    courseTitle: 'Linear Algebra for Machine Learning',
+    instructorName: 'Sara Okafor',
+    completedAt: '2025-07-20T09:15:00Z',
+    certificateId: 'AKD-2025-0103',
+  },
+];
+
 export const weeklyActivity = [
   { day: 'Mon', minutes: 45 },
   { day: 'Tue', minutes: 60 },
@@ -668,15 +696,12 @@ export const navGroups = [
       { label: 'Dashboard', to: '/student/dashboard', icon: 'LayoutDashboard' },
       { label: 'My Courses', to: '/student/my-courses', icon: 'BookOpen' },
       { label: 'Browse', to: '/student/browse', icon: 'Compass' },
-      { label: 'Learning Paths', to: '/student/paths', icon: 'Route' },
     ],
   },
   {
     label: 'Practice',
     items: [
       { label: 'AI Coach', to: '/student/ai-coach', icon: 'Sparkles', badge: 'AI' },
-      { label: 'Quizzes', to: '/student/quizzes', icon: 'ListChecks' },
-      { label: 'Labs', to: '/student/labs', icon: 'FlaskConical' },
     ],
   },
   {

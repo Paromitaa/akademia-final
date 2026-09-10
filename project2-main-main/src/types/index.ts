@@ -17,13 +17,33 @@ export interface Lesson {
   id: string;
   title: string;
   durationMinutes: number;
-  type: 'video' | 'reading' | 'quiz' | 'lab' | 'ai-coaching';
+  type: 'video' | 'reading' | 'quiz' | 'assignment' | 'ai-coaching';
   completed: boolean;
   description?: string;
   videoUrl?: string;
   pdfUrl?: string;
   readingContent?: string;
   resources?: { label: string; url: string }[];
+  assignmentTitle?: string;
+  assignmentDescription?: string;
+  assignmentSubmitted?: boolean;
+}
+
+export interface CourseMessage {
+  id: string;
+  user_id: string;
+  course_id: string;
+  sender_role: 'student' | 'instructor';
+  content: string;
+  created_at: string;
+}
+
+export interface CourseCertificate {
+  courseId: string;
+  courseTitle: string;
+  instructorName: string;
+  completedAt: string;
+  certificateId: string;
 }
 
 export interface Module {
@@ -83,7 +103,7 @@ export interface Achievement {
 
 export interface ActivityItem {
   id: string;
-  type: 'lesson-completed' | 'course-started' | 'achievement' | 'quiz-passed' | 'streak' | 'ai-coaching';
+  type: 'lesson-completed' | 'course-started' | 'achievement' | 'quiz-passed' | 'streak' | 'ai-coaching' | 'course-completed';
   title: string;
   detail: string;
   timestamp: string;

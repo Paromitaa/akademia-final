@@ -1,87 +1,102 @@
 import { useState, useMemo } from 'react';
-import { BookOpen, Search, Clock, CheckCircle2, PlayCircle, Circle, TrendingUp } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { BookOpen, Search, Clock, CircleCheck as CheckCircle2, CirclePlay as PlayCircle, Circle, Award, Trophy, ArrowRight, Download, Lock, TrendingUp } from 'lucide-react';
 import { PageHeader } from '@/components/common/page-header';
-import { CourseCard } from '@/components/common/course-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { courses } from '@/lib/mock-data';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { courses, courseCertificates, achievements } from '@/lib/mock-data';
+import { useLessonProgress } from '@/hooks/use-lesson-progress';
+import { getAllLessons } from '@/lib/course-utils';
+import { formatDuration, formatNumber } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import type { Course, CourseCertificate } from '@/types';
 
-type FilterKey = 'all' | 'in-progress' | 'completed' | 'not-started';
-
-const filters: { key: FilterKey; label: string; icon: typeof BookOpen }[] = [
-  { key: 'all', label: 'All', icon: BookOpen },
-  { key: 'in-progress', label: 'In progress', icon: PlayCircle },
-  { key: 'completed', label: 'Completed', icon: CheckCircle2 },
-  { key: 'not-started', label: 'Not started', icon: Circle },
-];
+type TabKey = 'ongoing' | 'completed' | 'pending';
 
 export function MyCoursesPage() {
-  const [filter, setFilter] = useState<FilterKey>('all');
+  const [tab, setTab] = useState<TabKey>('ongoing');
   const [search, setSearch] = useState('');
 
-  const enrolledCourses = useMemo(
-    () => courses.filter((c) => c.status !== 'not-started' || c.progress > 0),
+  const ongoing = useMemo(
+    () => courses.filter((c) => c.status === 'in-progress'),
+    []
+  );
+  const completed = useMemo(
+    () => courses.filter((c) => c.status === 'completed'),
+    []
+  );
+  const pending = useMemo(
+    () => courses.filter((c) => c.status === 'not-started' && c.progress === 0),
     []
   );
 
-  const allCourses = useMemo(() => courses, []);
-
   const filtered = useMemo(() => {
-    const source = filter === 'all' ? allCourses : enrolledCourses.filter((c) => c.status === filter);
+    let source: Course[];
+    switch (tab) {
+      case 'completed':
+        source = completed;
+        break;
+      case 'pending':
+        source = pending;
+        break;
+      default:
+        source = ongoing;
+    }
     if (!search.trim()) return source;
-    return source.filter((c) =>
-      c.title.toLowerCase().includes(search.toLowerCase()) ||
-      c.tags.some((t) => t.toLowerCase().includes(search.toLowerCase()))
+    return source.filter(
+      (c) =>
+        c.title.toLowerCase().includes(search.toLowerCase()) ||
+        c.tags.some((t) => t.toLowerCase().includes(search.toLowerCase()))
     );
-  }, [filter, search, allCourses, enrolledCourses]);
-
-  const counts = useMemo(
-    () => ({
-      all: allCourses.length,
-      'in-progress': enrolledCourses.filter((c) => c.status === 'in-progress').length,
-      completed: enrolledCourses.filter((c) => c.status === 'completed').length,
-      'not-started': allCourses.filter((c) => c.status === 'not-started').length,
-    }),
-    [allCourses, enrolledCourses]
-  );
+  }, [tab, search, ongoing, completed, pending]);
 
   return (
     <div className="space-y-8 animate-in-slide">
       <PageHeader
         title="My Courses"
-        description="Courses you're enrolled in, organized by progress."
+        description="Track your progress, resume where you left off, and celebrate completions."
       />
 
-      {/* Quick stats */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <QuickStat icon={BookOpen} label="Enrolled" value={enrolledCourses.length} accent="text-primary bg-primary/10" />
-        <QuickStat icon={PlayCircle} label="In progress" value={counts['in-progress']} accent="text-info bg-info/10" />
-        <QuickStat icon={CheckCircle2} label="Completed" value={counts.completed} accent="text-success bg-success/10" />
+        <QuickStat icon={PlayCircle} label="Ongoing" value={ongoing.length} accent="text-primary bg-primary/10" />
+        <QuickStat icon={CheckCircle2} label="Completed" value={completed.length} accent="text-success bg-success/10" />
+        <QuickStat icon={Lock} label="Pending" value={pending.length} accent="text-warning bg-warning/10" />
         <QuickStat
-          icon={Clock}
-          label="Hours left"
-          value={enrolledCourses
-            .filter((c) => c.status === 'in-progress')
-            .reduce((sum, c) => sum + (c.durationHours * (100 - c.progress)) / 100, 0)
-            .toFixed(0)}
-          accent="text-warning bg-warning/10"
+          icon={Award}
+          label="Certificates"
+          value={courseCertificates.length}
+          accent="text-info bg-info/10"
         />
       </div>
 
-      {/* Controls */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <Tabs value={filter} onValueChange={(v) => setFilter(v as FilterKey)}>
+        <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
           <TabsList>
-            {filters.map((f) => (
-              <TabsTrigger key={f.key} value={f.key} className="gap-1.5">
-                {f.label}
-                <span className="ml-1 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                  {counts[f.key]}
-                </span>
-              </TabsTrigger>
-            ))}
+            <TabsTrigger value="ongoing" className="gap-1.5">
+              <PlayCircle className="h-3.5 w-3.5" />
+              Ongoing
+              <span className="ml-1 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                {ongoing.length}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="completed" className="gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Completed
+              <span className="ml-1 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                {completed.length}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="pending" className="gap-1.5">
+              <Lock className="h-3.5 w-3.5" />
+              Pending
+              <span className="ml-1 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                {pending.length}
+              </span>
+            </TabsTrigger>
           </TabsList>
         </Tabs>
         <div className="relative max-w-xs flex-1">
@@ -95,27 +110,253 @@ export function MyCoursesPage() {
         </div>
       </div>
 
-      {/* Course grid */}
-      {filtered.length > 0 ? (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((course) => (
-            <CourseCard key={course.id} course={course} />
-          ))}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="grid h-16 w-16 place-items-center rounded-2xl bg-muted">
-            <BookOpen className="h-8 w-8 text-muted-foreground" />
-          </div>
-          <h3 className="mt-4 text-lg font-semibold text-foreground">No courses found</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {search ? 'Try a different search term.' : 'Browse the catalog to enroll in a course.'}
-          </p>
-          <Button asChild className="mt-4" size="sm">
-            <a href="/student/browse">Browse courses</a>
-          </Button>
+      {tab === 'completed' && (
+        <CompletedSection courses={filtered} certificates={courseCertificates} />
+      )}
+
+      {tab === 'ongoing' && (
+        <div className="space-y-5">
+          {filtered.length > 0 ? (
+            filtered.map((course) => <OngoingCourseRow key={course.id} course={course} />)
+          ) : (
+            <EmptyState search={search} />
+          )}
         </div>
       )}
+
+      {tab === 'pending' && (
+        <div className="space-y-5">
+          {filtered.length > 0 ? (
+            filtered.map((course) => <PendingCourseRow key={course.id} course={course} />)
+          ) : (
+            <EmptyState search={search} />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CompletedSection({
+  courses: completedCourses,
+  certificates,
+}: {
+  courses: Course[];
+  certificates: CourseCertificate[];
+}) {
+  if (completedCourses.length === 0) {
+    return <EmptyState search="" />;
+  }
+
+  return (
+    <div className="space-y-8">
+      {completedCourses.map((course) => {
+        const cert = certificates.find((c) => c.courseId === course.id);
+        const courseAchievements = achievements.filter(
+          (a) => a.unlockedAt !== null
+        );
+        return (
+          <div key={course.id} className="space-y-4">
+            <Card className="overflow-hidden">
+              <CardContent className="p-0">
+                <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
+                  <div className="relative aspect-video w-full shrink-0 overflow-hidden rounded-lg sm:w-40">
+                    <img
+                      src={course.thumbnailUrl}
+                      alt={course.title}
+                      className="h-full w-full object-cover"
+                    />
+                    <div className="absolute inset-0 grid place-items-center bg-black/20">
+                      <CheckCircle2 className="h-8 w-8 text-white" />
+                    </div>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <Badge className="gap-1 bg-success/10 text-success hover:bg-success/10">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Completed
+                      </Badge>
+                      {cert && (
+                        <Badge variant="outline" className="gap-1 text-info border-info/20">
+                          <Award className="h-3 w-3" />
+                          Certified
+                        </Badge>
+                      )}
+                    </div>
+                    <h3 className="mt-2 font-semibold text-foreground">{course.title}</h3>
+                    <p className="mt-1 line-clamp-1 text-sm text-muted-foreground">
+                      {course.subtitle}
+                    </p>
+                    <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
+                      <span>By {course.instructor.name}</span>
+                      <span>{formatDuration(course.durationHours * 60)}</span>
+                      <span>{course.modules.reduce((s, m) => s + m.lessons.length, 0)} lessons</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2 sm:items-end">
+                    <Button size="sm" variant="outline" asChild>
+                      <Link to={`/student/courses/${course.slug}`}>
+                        Review course
+                        <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                      </Link>
+                    </Button>
+                    {cert && (
+                      <Button size="sm" variant="ghost" className="text-info">
+                        <Download className="mr-1.5 h-3.5 w-3.5" />
+                        Certificate
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {cert && (
+                  <div className="border-t border-border bg-info/5 p-4">
+                    <div className="flex flex-wrap items-center gap-4 text-sm">
+                      <div className="flex items-center gap-2">
+                        <Award className="h-4 w-4 text-info" />
+                        <span className="font-medium text-foreground">Certificate ID:</span>
+                        <span className="text-muted-foreground">{cert.certificateId}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-muted-foreground">
+                          Completed on {new Date(cert.completedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {courseAchievements.length > 0 && (
+              <div className="ml-1 space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Achievements earned in this course
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {courseAchievements.map((ach) => (
+                    <div
+                      key={ach.id}
+                      className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5"
+                    >
+                      <Trophy className="h-3.5 w-3.5 text-warning" />
+                      <span className="text-sm font-medium text-foreground">{ach.title}</span>
+                      <Badge variant="outline" className="text-[10px] capitalize text-muted-foreground">
+                        {ach.rarity}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function OngoingCourseRow({ course }: { course: Course }) {
+  const { completedLessons } = useLessonProgress(course.id);
+  const allLessons = useMemo(() => getAllLessons(course), [course]);
+  const completed = allLessons.filter((l) => completedLessons.has(l.id)).length;
+  const total = allLessons.length;
+  const pct = total > 0 ? Math.round((completed / total) * 100) : course.progress;
+  const lastCompletedIdx = allLessons.reduce((last, l, i) => (completedLessons.has(l.id) ? i : last), -1);
+  const resumeLesson = allLessons[Math.min(lastCompletedIdx + 1, total - 1)] ?? allLessons[0];
+
+  return (
+    <Card>
+      <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
+        <div className="relative aspect-video w-full shrink-0 overflow-hidden rounded-lg sm:w-40">
+          <img src={course.thumbnailUrl} alt={course.title} className="h-full w-full object-cover" />
+          <div className="absolute inset-0 grid place-items-center bg-black/30">
+            <PlayCircle className="h-8 w-8 text-white" />
+          </div>
+        </div>
+        <div className="min-w-0 flex-1">
+          <Badge className="mb-2 gap-1 bg-primary/10 text-primary hover:bg-primary/10">
+            <TrendingUp className="h-3 w-3" />
+            In Progress
+          </Badge>
+          <h3 className="font-semibold text-foreground">{course.title}</h3>
+          <p className="mt-1 line-clamp-1 text-sm text-muted-foreground">{course.subtitle}</p>
+          <div className="mt-3">
+            <div className="mb-1.5 flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">
+                {completed} of {total} lessons completed
+              </span>
+              <span className="font-medium text-foreground">{pct}%</span>
+            </div>
+            <Progress value={pct} className="h-1.5" />
+          </div>
+        </div>
+        <div className="flex flex-col gap-2 sm:items-end">
+          <Button size="sm" asChild>
+            <Link to={`/student/courses/${course.slug}/learn?lesson=${resumeLesson?.id ?? ''}`}>
+              <PlayCircle className="mr-2 h-4 w-4" />
+              Resume
+            </Link>
+          </Button>
+          <Button size="sm" variant="ghost" asChild className="text-muted-foreground">
+            <Link to={`/student/courses/${course.slug}`}>
+              Course details
+            </Link>
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function PendingCourseRow({ course }: { course: Course }) {
+  return (
+    <Card>
+      <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
+        <div className="relative aspect-video w-full shrink-0 overflow-hidden rounded-lg sm:w-40">
+          <img src={course.thumbnailUrl} alt={course.title} className="h-full w-full object-cover opacity-70" />
+          <div className="absolute inset-0 grid place-items-center bg-black/40">
+            <Lock className="h-7 w-7 text-white/80" />
+          </div>
+        </div>
+        <div className="min-w-0 flex-1">
+          <Badge variant="outline" className="mb-2 gap-1 text-muted-foreground">
+            <Lock className="h-3 w-3" />
+            Not Started
+          </Badge>
+          <h3 className="font-semibold text-foreground">{course.title}</h3>
+          <p className="mt-1 line-clamp-1 text-sm text-muted-foreground">{course.subtitle}</p>
+          <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
+            <span>By {course.instructor.name}</span>
+            <span>{formatDuration(course.durationHours * 60)}</span>
+            <span>{course.difficulty}</span>
+          </div>
+        </div>
+        <Button size="sm" variant="outline" asChild>
+          <Link to={`/student/courses/${course.slug}`}>
+            Start course
+            <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+          </Link>
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function EmptyState({ search }: { search: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 text-center">
+      <div className="grid h-16 w-16 place-items-center rounded-2xl bg-muted">
+        <BookOpen className="h-8 w-8 text-muted-foreground" />
+      </div>
+      <h3 className="mt-4 text-lg font-semibold text-foreground">No courses found</h3>
+      <p className="mt-1 text-sm text-muted-foreground">
+        {search ? 'Try a different search term.' : 'Browse the catalog to enroll in a course.'}
+      </p>
+      <Button asChild className="mt-4" size="sm">
+        <Link to="/student/browse">Browse courses</Link>
+      </Button>
     </div>
   );
 }

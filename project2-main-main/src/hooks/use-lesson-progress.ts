@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { apiRequest } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/providers/auth-provider';
 
 interface ProgressRow {
@@ -12,9 +12,8 @@ export function useLessonProgress(courseId: string) {
   const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
-  // Load completed lesson progress from Go backend
   useEffect(() => {
-    if (!user) {
+    if (!user || !courseId) {
       setLoading(false);
       return;
     }
@@ -22,8 +21,13 @@ export function useLessonProgress(courseId: string) {
 
     (async () => {
       try {
-        const data = await apiRequest(`/courses/${courseId}/progress`);
-        if (!cancelled && data && Array.isArray(data)) {
+        const { data, error } = await supabase
+          .from('lesson_progress')
+          .select('lesson_id, completed')
+          .eq('user_id', user.id)
+          .eq('course_id', courseId);
+
+        if (!cancelled && !error && data) {
           const completed = new Set(
             (data as ProgressRow[]).filter((r) => r.completed).map((r) => r.lesson_id)
           );
@@ -36,17 +40,13 @@ export function useLessonProgress(courseId: string) {
       }
     })();
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [user, courseId]);
 
-  // Toggle or update lesson progress via Go backend
   const toggleLesson = useCallback(
     async (lessonId: string, completed: boolean) => {
       if (!user) return;
 
-      // Optimistically update UI state
       setCompletedLessons((prev) => {
         const next = new Set(prev);
         if (completed) next.add(lessonId);
@@ -55,17 +55,17 @@ export function useLessonProgress(courseId: string) {
       });
 
       try {
-        await apiRequest(`/courses/${courseId}/progress`, {
-          method: 'POST',
-          body: JSON.stringify({
+        await supabase
+          .from('lesson_progress')
+          .upsert({
+            user_id: user.id,
+            course_id: courseId,
             lesson_id: lessonId,
             completed,
             completed_at: completed ? new Date().toISOString() : null,
-          }),
-        });
+          }, { onConflict: 'user_id,lesson_id' });
       } catch (err) {
         console.error('Failed to update lesson progress:', err);
-        // Rollback on error
         setCompletedLessons((prev) => {
           const next = new Set(prev);
           if (!completed) next.add(lessonId);

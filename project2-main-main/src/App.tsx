@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Route as RouteIcon, Upload, Users, BookOpen } from 'lucide-react';
+import { Upload, Users, BookOpen } from 'lucide-react';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { AuthProvider } from '@/components/providers/auth-provider';
 import { ProtectedRoute } from '@/components/auth/protected-route';
@@ -14,9 +14,6 @@ import { CourseDetailPage } from '@/pages/course-detail';
 import { CoursePlayerPage } from '@/pages/course-player';
 import { AICoachPage } from '@/pages/ai-coach';
 import { MyCoursesPage } from '@/pages/my-courses';
-import { LearningPathsPage } from '@/pages/learning-paths';
-import { QuizzesPage } from '@/pages/quizzes';
-import { LabsPage } from '@/pages/labs';
 import { AchievementsPage } from '@/pages/achievements';
 import { SkillsPage } from '@/pages/skills';
 import { SettingsPage } from '@/pages/settings';
@@ -62,25 +59,12 @@ export default function App() {
                 <Route path="dashboard" element={<DashboardPage />} />
                 <Route path="browse" element={<CatalogPage />} />
                 <Route path="my-courses" element={<MyCoursesPage />} />
-                <Route path="paths" element={<LearningPathsPage />} />
                 <Route path="ai-coach" element={<AICoachPage />} />
-                <Route path="quizzes" element={<QuizzesPage />} />
-                <Route path="labs" element={<LabsPage />} />
                 <Route path="achievements" element={<AchievementsPage />} />
                 <Route path="skills" element={<SkillsPage />} />
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="courses/:slug" element={<CourseDetailPage />} />
                 <Route path="courses/:slug/learn" element={<CoursePlayerPage />} />
-                <Route
-                  path="paths/:slug"
-                  element={
-                    <PlaceholderPage
-                      title="Learning Path"
-                      description="A structured journey through a sequence of courses."
-                      icon={RouteIcon}
-                    />
-                  }
-                />
               </Route>
             </Route>
 

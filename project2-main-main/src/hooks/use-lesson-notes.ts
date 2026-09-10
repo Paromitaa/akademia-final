@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { apiRequest } from '@/lib/api';
+import { useCallback, useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/providers/auth-provider';
 
 export function useLessonNotes(courseId: string, lessonId: string) {
@@ -8,11 +8,9 @@ export function useLessonNotes(courseId: string, lessonId: string) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load lesson notes from Go backend
   useEffect(() => {
-    if (!user) {
+    if (!user || !courseId || !lessonId) {
       setLoading(false);
       return;
     }
@@ -20,8 +18,15 @@ export function useLessonNotes(courseId: string, lessonId: string) {
 
     (async () => {
       try {
-        const data = await apiRequest(`/courses/${courseId}/lessons/${lessonId}/notes`);
-        if (!cancelled && data && data.content) {
+        const { data, error } = await supabase
+          .from('lesson_notes')
+          .select('content')
+          .eq('user_id', user.id)
+          .eq('course_id', courseId)
+          .eq('lesson_id', lessonId)
+          .single();
+
+        if (!cancelled && !error && data && data.content) {
           setContent(data.content);
         }
       } catch (err) {
@@ -31,12 +36,9 @@ export function useLessonNotes(courseId: string, lessonId: string) {
       }
     })();
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [user, courseId, lessonId]);
 
-  // Save lesson notes to Go backend
   const save = useCallback(
     async (text: string) => {
       if (!user) return;
@@ -44,10 +46,12 @@ export function useLessonNotes(courseId: string, lessonId: string) {
       setSaved(false);
 
       try {
-        await apiRequest(`/courses/${courseId}/lessons/${lessonId}/notes`, {
-          method: 'POST',
-          body: JSON.stringify({ content: text }),
-        });
+        await supabase.from('lesson_notes').upsert({
+          user_id: user.id,
+          course_id: courseId,
+          lesson_id: lessonId,
+          content: text,
+        }, { onConflict: 'user_id,lesson_id' });
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
       } catch (err) {
@@ -59,20 +63,9 @@ export function useLessonNotes(courseId: string, lessonId: string) {
     [user, courseId, lessonId]
   );
 
-  const updateContent = useCallback(
-    (text: string) => {
-      setContent(text);
-      setSaved(false);
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-      saveTimer.current = setTimeout(() => save(text), 1200);
-    },
-    [save]
-  );
-
-  useEffect(() => {
-    return () => {
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-    };
+  const updateContent = useCallback((text: string) => {
+    setContent(text);
+    setSaved(false);
   }, []);
 
   return { content, loading, saving, saved, updateContent, save };
